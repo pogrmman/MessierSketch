@@ -51,8 +51,15 @@
                           (cos (+ (cadr row)
                                   (* jul-eph-millenium (caddr row)))))))))
 
+; Make Angle between 0 and 360
+(define (reduce-to-360 number)
+  (let ((frac (abs (- (/ number 360) (truncate (/ number 360))))))
+    (if (positive? number)
+        (* 360 frac)
+        (- 360 (* 360 frac)))))
+
 ; Periodic Term Calculation
-(define (calculate-heliocentric-term term-list julian-eph-millenium)
+(define (calculate-heliocentric-term term-list julian-eph-millenium degrees?)
   (let kernel ((sum (car term-list))
                (terms (cdr term-list))
                (counter 1))
@@ -60,33 +67,51 @@
         (kernel (+ sum (* (car terms) (expt julian-eph-millenium counter)))
                 (cdr terms)
                 (+ counter 1))
-        (let* ((result (/ (* 180 (/ sum (expt 10 8))) 3.141592653589793238462))
-               (frac (- (/ result 360) (truncate-quotient result 360))))
-          (if (positive? result)
-              (* 360 frac)
-              (- 360 (* 360 frac)))))))
+        (let ((result (/ sum (expt 10 8))))
+          (if degrees?
+            (let ((result (/ (* 180 result) 3.141592653589793238462)))
+              result)
+            result)))))
 
 ; Heliocentric Longitude Calculation
 (define (calculate-heliocentric-longitude julian-eph-millenium)
-  (calculate-heliocentric-term (list (reduce-table l0-table julian-eph-millennium)
-                                     (reduce-table l1-table julian-eph-millenium)
-                                     (reduce-table l2-table julian-eph-millenium)
-                                     (reduce-table l3-table julian-eph-millenium)
-                                     (reduce-table l4-table julian-eph-millenium)
-                                     (reduce-table l5-table julian-eph-millenium))
-                               julian-eph-millenium))
+  (reduce-to-360 (calculate-heliocentric-term (list (reduce-table l0-table julian-eph-millenium)
+                                                    (reduce-table l1-table julian-eph-millenium)
+                                                    (reduce-table l2-table julian-eph-millenium)
+                                                    (reduce-table l3-table julian-eph-millenium)
+                                                    (reduce-table l4-table julian-eph-millenium)
+                                                    (reduce-table l5-table julian-eph-millenium))
+                                              julian-eph-millenium #t)))
 
 ; Heliocentric Latitude Calculation
-
+(define (calculate-heliocentric-latitude julian-eph-millenium)
+  (calculate-heliocentric-term (list (reduce-table b0-table julian-eph-millenium)
+                                     (reduce-table b1-table julian-eph-millenium))
+                               julian-eph-millenium #t))
 
 ; Heliocentric Radius Vector Calculation
+(define (calculate-heliocentric-radius-vector julian-eph-millenium)
+  (calculate-heliocentric-term (list (reduce-table r0-table julian-eph-millenium)
+                                     (reduce-table r1-table julian-eph-millenium)
+                                     (reduce-table r2-table julian-eph-millenium)
+                                     (reduce-table r3-table julian-eph-millenium)
+                                     (reduce-table r4-table julian-eph-millenium))
+                               julian-eph-millenium #f))
 
+; Geocentric Longitude Calculation
+(define (calculate-geocentric-longitude heliocentric-longitude)
+  (let ((result (+ heliocentric-longitude 180)))
+    (reduce-to-360 result)))
+
+; Geocentric Latitude Calculation
+(define (calculate-geocentric-latitude heliocentric-latitude)
+  (- heliocentric-latitude))
 
 ; Tables for Earth Periodic Terms
 ; Heliocentric Longitude
 (define l0-table
   '((175347046 0 0)
-    (341656 4.6692568 6283.07585)
+    (3341656 4.6692568 6283.07585)
     (34894 4.6261 12566.1517)
     (3497 2.7441 5753.3849)
     (3418 2.8289 3.5231)
@@ -224,3 +249,85 @@
 
 (define l5-table
   '((1 3.14 0)))
+
+; Heliocentric Latitude
+(define b0-table
+  '((280 3.199 84334.662)
+    (102 5.422 5507.553)
+    (80 3.88 5223.69)
+    (44 3.7 2352.87)
+    (32 4 1577.34)))
+
+(define b1-table
+  '((9 3.9 5507.55)
+    (6 1.73 5223.69)))
+
+; Heliocentric Radius Vector
+(define r0-table
+  '((100013989 0 0)
+    (1670700 3.0984635 6283.07585)
+    (13956 3.05525 12566.1517)
+    (3084 5.1985 77713.7715)
+    (1628 1.1739 5753.3849)
+    (1576 2.8469 7860.4194)
+    (925 5.453 11506.77)
+    (542 4.564 3930.21)
+    (472 3.661 5884.927)
+    (346 0.964 5507.553)
+    (329 5.9 5223.694)
+    (307 0.299 5573.143)
+    (243 4.273 11790.629)
+    (212 5.847 1577.344)
+    (186 5.022 10977.079)
+    (175 3.012 18849.228)
+    (110 5.055 5486.778)
+    (98 0.89 6069.78)
+    (86 5.69 15720.84)
+    (86 1.27 161000.69)
+    (65 0.27 17260.15)
+    (63 0.92 529.69)
+    (57 2.01 83996.85)
+    (56 5.24 71430.7)
+    (49 3.25 2544.31)
+    (47 2.58 775.52)
+    (45 5.54 9437.76)
+    (43 6.01 6275.96)
+    (39 5.36 4694)
+    (38 2.39 8827.39)
+    (37 0.83 19651.05)
+    (37 4.9 12139.55)
+    (36 1.67 12036.46)
+    (35 1.84 2942.46)
+    (33 0.24 7084.9)
+    (32 0.18 5088.63)
+    (32 1.78 398.15)
+    (28 1.21 6286.6)
+    (28 1.9 6279.55)
+    (26 4.59 10447.39)))
+
+(define r1-table
+  '((103019 1.10749 6283.07585)
+    (1721 1.0644 12566.1517)
+    (702 3.142 0)
+    (32 1.02 18849.23)
+    (31 2.84 5507.55)
+    (25 1.32 5223.69)
+    (18 1.42 1577.34)
+    (10 5.91 10977.08)
+    (9 1.42 6275.96)
+    (9 0.27 5486.78)))
+
+(define r2-table
+  '((4359 5.7846 6283.0758)
+    (124 5.579 12566.152)
+    (12 3.14 0)
+    (9 3.63 77713.77)
+    (6 1.87 5573.14)
+    (3 5.47 18849.23)))
+
+(define r3-table
+  '((145 4.273 6283.076)
+    (7 3.92 12566.15)))
+
+(define r4-table
+  '((4 2.56 6283.08)))
