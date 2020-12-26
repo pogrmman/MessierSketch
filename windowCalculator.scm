@@ -9,6 +9,8 @@
 ;; Positition of Sun Calculations
 ;; Algorithms from Reda, I., Andreas, A. (January, 2008). Solar Position Algorithm for
 ;;                     Solar Radiation Applications. Golden, CO: National Renewable Energy Laboratory.
+
+;; Julian Date Calculations
 ; Julian Day Calculation
 (define (jul-day year month day)
   (let ((month (if (< 2 month)
@@ -36,6 +38,7 @@
 (define (jul-eph-millenium jul-eph-century)
   (/ jul-eph-century 10))
 
+;; Heliocentric Longitude, Latitude, and Radius Vector
 ; Reducer for Heliocentric Longitude, Latitude, and Radius
 (define (reduce-table tbl jul-eph-millenium)
   (let kernel ((accumulator 0)
@@ -98,6 +101,7 @@
                                      (reduce-table r4-table julian-eph-millenium))
                                julian-eph-millenium #f))
 
+;; Geocentric Latitude and Longitude
 ; Geocentric Longitude Calculation
 (define (calculate-geocentric-longitude heliocentric-longitude)
   (let ((result (+ heliocentric-longitude 180)))
@@ -107,7 +111,58 @@
 (define (calculate-geocentric-latitude heliocentric-latitude)
   (- heliocentric-latitude))
 
-; Tables for Earth Periodic Terms
+;; Nutation Coefficients
+; Nutation Xs Generic Function
+(define (xs a b c d jce)
+  (+ a
+     (* b jce)
+     (* c (expt jce 2))
+     (/ (expt jce 3) d)))
+
+; Mean Elongation of Moon from Sun
+(define (x0 jce)
+  (xs 297.85036 445267.111480 -0.0019142 189474 jce))
+
+; Mean Anomaly of the Sun
+(define (x1 jce)
+  (xs 357.52772 35999.050340 -0.0001603 -300000 jce))
+
+; Mean Anomaly of the Moon
+(define (x2 jce)
+  (xs 134.96298 477198.867398 0.0086972 56250 jce))
+
+; Moon Argument of Latitude
+(define (x3 jce)
+  (xs 93.27191 483202.017538 -0.0036825 327270 jce))
+
+; Moon Longitude of AN -- Mean Ecliptic Orbit -- Mean Equinox
+(define (x4 jce)
+  (xs 125.04452 -1934.136261 0.0020708 450000 jce))
+
+; Nutation Longitude
+(define (delta-sigma xs table jce)
+  (define (summer xs ys)
+    (let kernel ((sum 0)
+                 (xs xs)
+                 (ys ys))
+      (if (not (null? xs))
+          (kernel (+ sum (* (car xs) (car ys)))
+                  (cdr xs)
+                  (cdr ys))
+          sum)))
+  (let kernel ((sum 0)
+               (table table))
+    (if (not (null? table))
+        (let* ((row (car table))
+               (ys (car row))
+               (a (caadr row))
+               (b (cadadr row)))
+          (kernel (+ sum (* (sin (summer xs ys))
+                            (+ a (* b jce))))
+                  (cdr table)))
+        (/ sum 36000000))))
+
+;; Tables for Earth Periodic Terms
 ; Heliocentric Longitude
 (define l0-table
   '((175347046 0 0)
@@ -331,3 +386,69 @@
 
 (define r4-table
   '((4 2.56 6283.08)))
+
+;; Nutation Table
+(define nut-table
+  '(((0 0 0 0 1) (-171996 -174.2) (92025 8.9))
+    ((-2 0 0 2 2) (-13187 -1.6) (5736 -3.1))
+    ((0 0 0 2 2) (-2274 -0.2) (977 -0.5))
+    ((0 0 0 0 2) (2062 0.2) (-895 0.5))
+    ((0 1 0 0 0) (1426 -3.4) (54 -0.1))
+    ((0 0 1 0 0) (712 0.1) (-7 0))
+    ((-2 1 0 2 2) (-517 1.2) (224 -0.6))
+    ((0 0 0 2 1) (-386 -0.4) (200 0))
+    ((0 0 1 2 2) (-301 0) (129 -0.1))
+    ((-2 -1 0 2 2) (217 -0.5) (-95 0.3))
+    ((-2 0 1 0 0) (-158 0) (0 0))
+    ((-2 0 0 2 1) (129 0.1) (-70 0))
+    ((0 0 -1 2 2) (123 0) (-53 0))
+    ((2 0 0 0 0) (63 0) (0 0))
+    ((0 0 1 0 1) (63 0.1) (-33 0))
+    ((2 0 -1 2 2) (-59 0) (26 0))
+    ((0 0 -1 0 1) (-58 -0.1) (32 0))
+    ((0 0 1 2 1) (-51 0) (27 0))
+    ((-2 0 2 0 0) (48 0) (0 0))
+    ((0 0 -2 2 1) (46 0) (-24 0))
+    ((2 0 0 2 2) (-38 0) (16 0))
+    ((0 0 2 2 2) (-31 0) (13 0))
+    ((0 0 2 0 0) (29 0) (0 0))
+    ((-2 0 1 2 2) (29 0) (-12 0))
+    ((0 0 0 2 0) (26 0) (0 0))
+    ((-2 0 0 2 0) (-22 0) (0 0))
+    ((0 0 -1 2 1) (21 0) (-10 0))
+    ((0 2 0 0 0) (17 -0.1) (0 0))
+    ((2 0 -1 0 1) (16 0) (-8 0))
+    ((-2 2 0 2 2) (-16 0.1) (7 0))
+    ((0 1 0 0 1) (-15 0) (9 0))
+    ((-2 0 1 0 1) (-13 0) (7 0))
+    ((0 -1 0 0 1) (-12 0) (6 0))
+    ((0 0 2 -2 0) (11 0) (0 0))
+    ((2 0 -1 2 1) (-10 0) (5 0))
+    ((2 0 1 2 2) (-8 0) (3 0))
+    ((0 1 0 2 2) (7 0) (-3 0))
+    ((-2 1 1 0 0) (-7 0) (0 0))
+    ((0 -1 0 2 2) (-7 0) (3 0))
+    ((2 0 0 2 1) (-7 0) (3 0))
+    ((2 0 1 0 0) (6 0) (0 0))
+    ((-2 0 2 2 2) (6 0) (-3 0))
+    ((-2 0 1 2 1) (6 0) (-3 0))
+    ((2 0 -2 0 1) (-6 0) (3 0))
+    ((2 0 0 0 1) (-6 0) (3 0))
+    ((0 -1 1 0 0) (5 0) (0 0))
+    ((-2 -1 0 2 1) (-5 0) (3 0))
+    ((-2 0 0 0 1) (-5 0) (3 0))
+    ((0 0 2 2 1) (-5 0) (3 0))
+    ((-2 0 2 0 1) (4 0) (0 0))
+    ((-2 1 0 2 1) (4 0) (0 0))
+    ((0 0 1 -2 0) (4 0) (0 0))
+    ((-1 0 1 0 0) (-4 0) (0 0))
+    ((-2 1 0 0 0) (-4 0) (0 0))
+    ((1 0 0 0 0) (-4 0) (0 0))
+    ((0 0 1 2 0) (3 0) (0 0))
+    ((0 0 -2 2 2) (-3 0) (0 0))
+    ((-1 -1 1 0 0) (-3 0) (0 0))
+    ((0 1 1 0 0) (-3 0) (0 0))
+    ((0 -1 1 2 2) (-3 0) (0 0))
+    ((2 -1 -1 2 2) (-3 0) (0 0))
+    ((0 0 3 2 2) (-3 0) (0 0))
+    ((2 -1 0 2 2) (-3 0) (0 0))))
