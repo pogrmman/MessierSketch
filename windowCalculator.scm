@@ -139,8 +139,18 @@
 (define (x4 jce)
   (xs 125.04452 -1934.136261 0.0020708 450000 jce))
 
-; Nutation Longitude
-(define (delta-sigma xs table jce)
+; All args for nutation, in radians
+(define (all-xs jce)
+  (map (lambda (x)
+         (* x (/ 3.141592653589793238462 180)))
+       (list (x0 jce)
+             (x1 jce)
+             (x2 jce)
+             (x3 jce)
+             (x4 jce))))
+
+; Nutation calculations
+(define (nut-delta xs table jce type)
   (define (summer xs ys)
     (let kernel ((sum 0)
                  (xs xs)
@@ -155,12 +165,74 @@
     (if (not (null? table))
         (let* ((row (car table))
                (ys (car row))
-               (a (caadr row))
-               (b (cadadr row)))
-          (kernel (+ sum (* (sin (summer xs ys))
-                            (+ a (* b jce))))
+               (a (if (eq? type 'longitude)
+                      (caadr row)
+                      (if (eq? type 'obliquity)
+                          (caaddr row))))
+               (b (if (eq? type 'longitude)
+                      (cadadr row)
+                      (if (eq? type 'obliquity)
+                          (cadr (caddr row)))))
+               (op (if (eq? type 'longitude)
+                       sin
+                       (if (eq? type 'obliquity)
+                           cos)))
+               (row-sum (* (+ a (* b jce))
+                           (op (summer xs ys)))))
+          (kernel (+ sum row-sum)
                   (cdr table)))
         (/ sum 36000000))))
+
+; Nutation in longitude
+(define (nut-longitude jce)
+  (nut-delta (all-xs jce) nut-table jce 'longitude))
+
+; Nutation in obliquity
+(define (nut-obliquity jce)
+  (nut-delta (all-xs jce) nut-table jce 'obliquity))
+
+;; True obliquity of ecliptic
+(define (true-obliquity-ecliptic jme nut-obl)
+  (let* ((u (/ jme 10))
+         (mean-obliquity (+ 84381.448
+                            (* -4680.93 u)
+                            (* -1.55 (expt u 2))
+                            (* 1999.25 (expt u 3))
+                            (* -51.38 (expt u 4))
+                            (* -249.67 (expt u 5))
+                            (* -39.05 (expt u 6))
+                            (* 7.12 (expt u 7))
+                            (* 27.87 (expt u 8))
+                            (* 5.79 (expt u 9))
+                            (* 2.45 (expt u 10)))))
+    (+ (/ mean-obliquity 3600) nut-obl)))
+
+;; Sidereal Times
+; Greenwich Mean Sidereal Time
+(define (gmst jd)
+  (let ((jc (jul-century jd)))
+    (reduce-to-360 (+ 280.46061837
+                      (* 360.98564736629 (- jd 2451545))
+                      (* 0.000387933 (expt jc 2))
+                      (/ (expt jc 3) -38710000)))))
+
+; Greenwich Apparent Sidereal Time
+(define (gast gmst nut-long obliq)
+  (+ gmst (* nut-long
+             (cos (* obliq (/ 3.141592653589793238462 180))))))
+
+; Local Apparent Sidereal Time
+(define (last gast longitude)
+  (+ gast longitude))
+
+; Sidereal Time Degrees to Hours, Minutes, Seconds
+(define (degrees->hms degrees)
+  (let* ((hours (/ degrees 15))
+         (minutes (* 60 (- hours (truncate hours))))
+         (seconds (* 60 (- minutes (truncate minutes)))))
+    (list (truncate hours)
+          (truncate minutes)
+          seconds)))
 
 ;; Tables for Earth Periodic Terms
 ; Heliocentric Longitude
