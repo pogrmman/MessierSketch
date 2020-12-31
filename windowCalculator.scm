@@ -2,9 +2,9 @@
 ;;; Calculates dates on which an object is high enough at a given time to be worth observing
 
 ;; Imports
-(import ((scheme base)
-         (scheme cxr)
-         (scheme inexact)))
+(import (scheme base)
+        (scheme cxr)
+        (scheme inexact))
 
 ;; Positition of Sun Calculations
 ;; Algorithms from Reda, I., Andreas, A. (January, 2008). Solar Position Algorithm for
@@ -41,18 +41,12 @@
 ;; Heliocentric Longitude, Latitude, and Radius Vector
 ; Reducer for Heliocentric Longitude, Latitude, and Radius
 (define (reduce-table tbl jul-eph-millenium)
-  (let kernel ((accumulator 0)
-               (row (car tbl))
-               (rest (cdr tbl)))
-    (if (not (null? rest))
-        (kernel (+ accumulator (* (car row)
-                                  (cos (+ (cadr row)
-                                          (* jul-eph-millenium (caddr row))))))
-                (car rest)
-                (cdr rest))
-        (+ accumulator (* (car row)
-                          (cos (+ (cadr row)
-                                  (* jul-eph-millenium (caddr row)))))))))
+  (apply +
+         (map (lambda (x)
+                (apply (lambda (a b c)
+                         (* a (cos (+ b (* jul-eph-millenium c)))))
+                       x))
+              tbl)))
 
 ; Make Angle between 0 and 360
 (define (reduce-to-360 number)
@@ -151,28 +145,19 @@
 
 ; Nutation calculations
 (define (nut-delta xs table jce type)
-  (let kernel ((sum 0)
-               (table table))
-    (if (not (null? table))
-        (let* ((row (car table))
-               (ys (car row))
-               (a (if (eq? type 'longitude)
-                      (caadr row)
-                      (if (eq? type 'obliquity)
-                          (caaddr row))))
-               (b (if (eq? type 'longitude)
-                      (cadadr row)
-                      (if (eq? type 'obliquity)
-                          (cadr (caddr row)))))
-               (op (if (eq? type 'longitude)
-                       sin
-                       (if (eq? type 'obliquity)
-                           cos)))
-               (row-sum (* (+ a (* b jce))
-                           (op (apply + (map * xs ys))))))
-          (kernel (+ sum row-sum)
-                  (cdr table)))
-        (/ sum 36000000))))
+  (/ (if (eq? type 'longitude)
+         (apply +
+                (map (lambda (x)
+                       (* (+ (caadr x) (* (cadadr x) jce))
+                          (sin (apply + (map * xs (car x))))))
+                     table))
+         (if (eq? type 'obliquity)
+             (apply +
+                    (map (lambda (x)
+                           (* (+ (caaddr x) (* (cadr (caddr x)) jce))
+                              (cos (apply + (map * xs (car x))))))
+                         table))))
+     36000000))
 
 ; Nutation in longitude
 (define (nut-longitude jce)
