@@ -23,7 +23,7 @@
              (year (if (< 2 month)
                        year
                        (- year 1)))
-             (date-type (calendar-type year month (truncate-day)))
+             (date-type (calendar-type year month (truncate day)))
              (b (if (eq? date-type 'gregorian)
                     (let ((a (truncate-quotient year 100)))
                       (+ 2 (- a) (truncate-quotient a 4)))
@@ -93,9 +93,9 @@
     ;; angle -- Greenwich Mean Sidereal Time: the angle between Greenwich's meridian and the mean
     ;;          position of the vernal equinox
     (define (greenwich-mean-sidereal-time julian-date)
-      (let ((jc (jul-century jd)))
+      (let ((jc (julian-century julian-date)))
         (reduce-to-360 (+ 280.46061837
-                          (* 360.98564736629 (- jd 2451545))
+                          (* 360.98564736629 (- julian-date 2451545))
                           (* 0.000387933 (expt jc 2))
                           (/ (expt jc 3) -38710000)))))
 
@@ -110,7 +110,7 @@
     ;;          apparent position of the vernal equinox
     (define (greenwich-apparent-sidereal-time julian-date nutation-longitude ecliptic-obliquity)
       (+ (greenwich-mean-sidereal-time julian-date)
-         (* nutataion-longitude
+         (* nutation-longitude
             (cos (degrees->radians ecliptic-obliquity)))))
 
     ;; Local Sidereal Time
