@@ -1,0 +1,185 @@
+(import (scheme base)
+        (scheme read)
+        (scheme write)
+        (scheme file)
+        (srfi 13)
+        (astro angles)
+        (astro time))
+
+(begin
+  (define (read-catalog catalog)
+    (let ((file (open-input-file catalog)))
+      (let kernel ((next (peek-char file))
+                   (lst '()))
+        (if (not (eof-object? next))
+            (let ((line (string-tokenize (read-line file))))
+              (kernel (peek-char file) (cons line lst)))
+            (begin
+              (close-port file)
+              (reverse lst))))))
+
+  (define (make-number item)
+    (if (string->number item)
+        (string->number item)
+        item))
+
+  (define (reformat-catalog catalog)
+    (map (lambda (catalog-line)
+           (let ((rest (cdddr catalog-line)))
+             (list (car catalog-line)
+                   (list (make-number (car rest))
+                         (make-number (cadr rest)))
+                   (list (make-number (caddr rest))
+                         (make-number (cadddr rest))))))
+         catalog))
+
+  (define (catalog->catalog-hms catalog)
+    (let ((first (car catalog)))
+      (cons (list (car first)
+                  (list (caadr first)
+                        (cadadr first)
+                        "RA_Seconds")
+                  (list (caaddr first)
+                        (car (cdaddr first))
+                        "Dec_Seconds"))
+            (map (lambda (catalog-line)
+                   (list (car catalog-line)
+                         (hm->hms (cadr catalog-line))
+                         (hm->hms (caddr catalog-line))))
+                 (cdr catalog)))))
+
+  (define (leap-year? year)
+    (if (= (remainder year 4) 0)
+        (if (not (= (remainder year 100) 0))
+            #t
+            (if (= (remainder year 400) 0)
+                #t
+                #f))
+        #f))
+
+  (define (make-year year)
+    (let kernel ((days (if (leap-year? year)
+                           366
+                           365))
+                 (lst '()))
+      (if (> days 0)
+          (kernel (- days 1) (cons days lst))
+          (map (lambda (x)
+                 (day-num->date year x))
+               lst))))
+
+  (define (add-day-of-week year)
+    (map (lambda (x) (list x (day-of-week x))) year))
+
+  (define (day-num->date year day-num)
+    (let ((ordinal-months (if (leap-year? year)
+                              '(31 60 91 121 152 182 213 244 274 305 335 366)
+                              '(31 59 90 120 151 181 212 243 273 304 334 365))))
+      (let kernel ((prev-month 0)
+                   (cur-month (car ordinal-months))
+                   (next-months (cdr ordinal-months))
+                   (counter 1))
+        (if (<= day-num cur-month)
+            (list year counter (- day-num prev-month))
+            (kernel cur-month (car next-months) (cdr next-months) (+ counter 1))))))
+
+  (define (fractional-day observing-time timezone)
+    (/ (+ timezone
+          (car observing-time)
+          (/ (cadr observing-time) 60)
+          (/ (caddr observing-time) 3600))
+       24))
+
+  (define (observing-window obs-year start end timezone)
+    (let ((start-fraction (lambda (tz)
+                            (fractional-day start tz)))
+          (end-fraction (lambda (tz)
+                          (fractional-day end tz))))
+      
+      (map (lambda (date)
+             (let ((year (year date))
+                   (month (month date))
+                   (day (day date)))
+               (let* ((start-date (list year month (+ day start-fraction)))
+                      (end-date (list year month (+ day end-fraction)))
+                      (start-jd (apply julian-date start-date))
+                      (end-jd (apply julian-date end-date))
+                      (start-jde (julian-ephemeris-date start-jd (estimate-delta-t start-date)))
+                      (end-jde (julian-ephemeris-date end-jd (estimate-delta-t end-date))))
+                 (list date start-jde end-jde))))
+           obs-year)))
+
+  (define (estimate-delta-t date)
+    (let ((t (- (year date) 2000)))
+      (+ 62.92
+         (* 0.32217 t)
+         (* 0.005589 (expt t 2)))))
+
+  (define (year date)
+    (car date))
+
+  (define (month date)
+    (cadr date))
+
+  (define (day date)
+    (caddr date))
+
+  (define (convert-to-gast window)
+    (map (lambda (x)
+           (let ((date (car x))
+                 (start (cadr x))
+                 (end (caddr x)))
+             (list date
+                   (greenwich-apparent-sidereal-time
+                    start
+                    (nutation-longitude (julian-century start))
+                    (ecliptic-true-obliquity (julian-millenium start)
+                                             (nutation-obliquity (julian-century start))))
+                   (greenwich-apparent-sidereal-time
+                    end
+                    (nutation-longitude (julian-century end))
+                    (ecliptic-true-obliquity (julian-millenium end)
+                                             (nutation-obliquity (julian-century end)))))))
+         window))
+  
+  (define (convert-to-lst window longitude)
+    (map (lambda (x)
+           (let ((date (car x))
+                 (start (cadr x))
+                 (end (caddr x)))
+             (list date
+                   (degrees->hms (local-sidereal-time start longitude))
+                   (degrees->hms (local-sidereal-time start longitude)))))
+         window))
+
+  (define (day-of-week date)
+    (let* ((k (day date))
+           (month (month date))
+           (m (if (> (- month 2) 0)
+                  (- month 2)
+                  (+ month 10)))
+           (year (if (> (- month 2) 0)
+                     (year date)
+                     (- (year date) 1)))
+           (c (quotient year 100))
+           (y (- year (* c 100))))
+      (let ((weekday (remainder (+ k
+                                   (floor (- (* 2.6 m) 0.2))
+                                   (* -2 c)
+                                   y
+                                   (floor (/ y 4))
+                                   (floor (/ c 4)))
+                                7)))
+        (if (>= weekday 0)
+            weekday
+            (+ 7 weekday)))))
+
+  (define (add-timezone year timezone)
+    (let kernel ((date (car year))
+                 (rest-of-year (cdr year))
+                 (new-year '()))
+      (if (not (null? rest-of-year))
+          (let ((date (car date))
+                (weekday (cadr date)))
+            (let ((m (month date)))
+              

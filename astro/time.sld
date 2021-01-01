@@ -17,24 +17,24 @@
     ;; day -- the day of the date to convert, can include fraction of day to convert a time
     ;; julian-date -- the converted julian date
     (define (julian-date year month day)
-      (let* ((month (if (< 2 month)
-                        month
-                        (+ month 12)))
-             (year (if (< 2 month)
-                       year
-                       (- year 1)))
-             (date-type (calendar-type year month (truncate day)))
-             (b (if (eq? date-type 'gregorian)
-                    (let ((a (truncate-quotient year 100)))
-                      (+ 2 (- a) (truncate-quotient a 4)))
-                    (if (eq? date-type 'julian)
-                        0
-                        (error "The calendar type of the date entered cannot be determined")))))
-        (+ (truncate (* 365.25 (+ year 4716)))
-           (truncate (* 30.6001 (+ month 1)))
-           day
-           b
-           -1524.5)))
+      (let ((month (if (< 2 month)
+                       month
+                       (+ month 12)))
+            (year (if (< 2 month)
+                      year
+                      (- year 1))))
+        (let* ((date-type (calendar-type year month (truncate day)))
+               (b (if (eq? date-type 'gregorian)
+                      (let ((a (truncate-quotient year 100)))
+                        (+ 2 (- a) (truncate-quotient a 4)))
+                      (if (eq? date-type 'julian)
+                          0
+                          (error "The calendar type of the date entered cannot be determined")))))
+          (+ (truncate (* 365.25 (+ year 4716)))
+             (truncate (* 30.6001 (+ month 1)))
+             day
+             b
+             -1524.5))))
 
     ;; Calendar Type
     ;; Determine whether a date uses the Julian or the Gregorian Calendar

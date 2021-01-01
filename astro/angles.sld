@@ -6,7 +6,7 @@
           (scheme inexact))
   (export pi reduce-to-360
           degrees->radians radians->degrees
-          degrees->hms hms->degrees
+          degrees->hms hms->degrees hm->hms
           hms+ hms- hms* hms/)
 
   (begin
@@ -49,9 +49,9 @@
       (let* ((hours (/ angle 15))
              (minutes (* 60 (- hours (truncate hours))))
              (seconds (* 60 (- minutes (truncate minutes)))))
-        (list (truncate hours)
-              (truncate minutes)
-              seconds)))
+        (list (exact (truncate hours))
+              (exact (truncate minutes))
+              (round-to-decimal-places seconds 2))))
 
     ;; Hours:Minutes:Seconds to Degrees Conversion
     ;; Convert an angle in hours:minutes:seconds to an angle in degrees
@@ -106,4 +106,19 @@
     ;; angle2 -- an angle, in hours:minutes:seconds
     ;; quotient-angle -- the quotient of angle and angle2, in hours:minutes:seconds
     (define (hms/ angle angle2)
-      (degrees->hms (reduce-to-360 (/ (hms->degrees angle) (hms->degrees angle2)))))))
+      (degrees->hms (reduce-to-360 (/ (hms->degrees angle) (hms->degrees angle2)))))
+
+    ;; Hours:Minutes to Hours:Minutes:Seconds Conversion
+    ;; Convert an angle in hours:minutes format to hours:minutes:seconds
+    ;; Usage: (hm->hms angle) -> converted-angle
+    ;; angle -- an angle in hours:minutes format
+    ;; converted-angle -- an angle in hours:minutes:seconds format
+    (define (hm->hms angle)
+      (let* ((hours (car angle))
+             (minutes (exact (truncate (cadr angle))))
+             (seconds (* 60 (- (cadr angle) minutes))))
+        (list hours minutes (round-to-decimal-places seconds 2))))
+
+    (define (round-to-decimal-places number decimal-places)
+      (let ((power (expt 10 decimal-places)))
+        (/ (round (* number power)) power)))
