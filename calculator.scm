@@ -178,8 +178,8 @@
                  (start (cadr x))
                  (end (caddr x)))
              (list date
-                   (degrees->hms (local-sidereal-time start longitude))
-                   (degrees->hms (local-sidereal-time end longitude)))))
+                   (hms+ '(12 0 0) (degrees->hms (local-sidereal-time start longitude)))
+                   (hms+ '(12 0 0) (degrees->hms (local-sidereal-time end longitude))))))
          window))
 
   (define (day-of-week date)
@@ -353,7 +353,7 @@
   (define observing-year (add-timezone (add-day-of-week (make-year 2021)) -6)) ; base timezone CST = -6
   (define observing-times (observing-window observing-year '(21 30 0) '(23 30 0))) ; 9:30 pm to 11:30 pm
   ;; Get local sidereal times for Austin -- longtidue -97.7997
-  (define observing-times (convert-to-lst (convert-to-gast observing-window) -97.7997))
+  (define observing-times (convert-to-lst (convert-to-gast observing-times) -97.7997))
   (define catalog-with-observing-windows (build-catalog-windows
                                           (get-observing-dates (cdr catalog) observing-times)))
 
