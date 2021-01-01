@@ -42,8 +42,12 @@ and to include difficulty notes
 [Solar Position Algorithm for Solar Radiation Applications](https://www.nrel.gov/docs/fy08osti/34302.pdf)
 -- I took many of my astronomical calculations from here. Some are currently unused, but I plan to
 create a full-fledge astronomical calculation library using many of them.
+
+
 [Messier Guide by Tony Flanders](https://tonyflanders.wordpress.com/messier-guide-index-by-number/) --
 I used this to identify objects of low surface brightness that may be a challenge
+
+
 [Messier Object Data, sorted by Right Ascension](https://www.messier.seds.org/dataRA.html) --
 The actual catalog I'm using to plan my observations. (Yes, it has 111 distinct objects, but I plan to
 sketch all of them.)
