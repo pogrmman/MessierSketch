@@ -348,6 +348,19 @@
             (newline f)
             (kernel (cdr lines))))))
 
+  ;; Find objects in the south that may be obstructed by low horizon
+  (define (far-south? object dec)
+    (hms<= (catalog-dec object) dec))
+
+  (define (south-objects catalog dec)
+    (let kernel ((catalog catalog)
+                 (south '()))
+      (if (not (null? catalog))
+          (if (far-south? (car catalog) dec)
+              (kernel (cdr catalog) (cons (car catalog) south))
+              (kernel (cdr catalog) south))
+          south)))
+  
   ;; Actual Calculation
   (define catalog (catalog->catalog-hms (reformat-catalog (read-catalog "catalog.txt"))))
   (define observing-year (add-timezone (add-day-of-week (make-year 2021)) -6)) ; base timezone CST = -6
