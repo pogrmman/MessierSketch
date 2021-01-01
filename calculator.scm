@@ -8,6 +8,7 @@
         (astro time))
 
 (begin
+  ;; Function Definitions
   (define (read-catalog catalog)
     (let ((file (open-input-file catalog)))
       (let kernel ((next (peek-char file))
@@ -336,5 +337,34 @@
             (decm (number->string (cadr dec)))
             (decs (number->string (caddr dec))))
         (string-concatenate (list name " -- " rah "h " ram "m " ras "s -- "
-                                  decd "° " decm "' " decs (make-string 1 #\") " -- "
-                                  window-strings))))))
+                                  decd "\xB0; " decm "' " decs "\" -- "
+                                  window-strings)))))
+
+  (define (writelines lines f)
+    (let kernel ((lines lines))
+      (if (not (null? lines))
+          (begin
+            (write-string (car lines) f)
+            (newline f)
+            (kernel (cdr lines))))))
+
+  ;; Actual Calculation
+  (define catalog (catalog->catalog-hms (reformat-catalog (read-catalog "catalog.txt"))))
+  (define observing-year (add-timezone (add-day-of-week (make-year 2021)) -6)) ; base timezone CST = -6
+  (define observing-times (observing-window observing-year '(21 30 0) '(23 30 0))) ; 9:30 pm to 11:30 pm
+  ;; Get local sidereal times for Austin -- longtidue -97.7997
+  (define observing-times (convert-to-lst (convert-to-gast observing-window) -97.7997))
+  (define catalog-with-observing-windows (build-catalog-windows
+                                          (get-observing-dates (cdr catalog) observing-times)))
+
+  ;; Prepare to export
+  (define strings-to-print
+    (cons (string-concatenate (list "Object Number -- Right Ascension -- Declination -- "
+                                    "Dates where Meridian Transit is between "
+                                    "9:30 and 11:30 pm local time"))
+          (map catalog-item-to-string catalog-with-observing-windows)))
+
+  ;; Build output file
+  (define file (open-output-file "observing_dates.txt"))
+  (writelines strings-to-print file)
+  (close-output-port file))
