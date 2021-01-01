@@ -41,7 +41,7 @@ and to include difficulty notes
 ## References
 [Solar Position Algorithm for Solar Radiation Applications](https://www.nrel.gov/docs/fy08osti/34302.pdf)
 -- I took many of my astronomical calculations from here. Some are currently unused, but I plan to
-create a full-fledge astronomical calculation library using many of them.
+create a full-fledged astronomical calculation library using many of them.
 
 
 [Messier Guide by Tony Flanders](https://tonyflanders.wordpress.com/messier-guide-index-by-number/) --
