@@ -121,4 +121,4 @@
 
     (define (round-to-decimal-places number decimal-places)
       (let ((power (expt 10 decimal-places)))
-        (/ (round (* number power)) power)))
+        (/ (round (* number power)) power)))))
