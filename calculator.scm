@@ -5,7 +5,8 @@
         (scheme cxr)
         (srfi 13)
         (astro angles)
-        (astro time))
+        (astro time)
+        (astro calcs))
 
 (begin
   ;; Function Definitions
