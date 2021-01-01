@@ -2,6 +2,7 @@
         (scheme read)
         (scheme write)
         (scheme file)
+        (scheme cxr)
         (srfi 13)
         (astro angles)
         (astro time))
@@ -48,6 +49,15 @@
                          (hm->hms (caddr catalog-line))))
                  (cdr catalog)))))
 
+  (define (catalog-name object)
+    (car object))
+
+  (define (catalog-ra object)
+    (cadr object))
+
+  (define (catalog-dec object)
+    (caddr object))
+  
   (define (leap-year? year)
     (if (= (remainder year 4) 0)
         (if (not (= (remainder year 100) 0))
@@ -80,9 +90,29 @@
                    (next-months (cdr ordinal-months))
                    (counter 1))
         (if (<= day-num cur-month)
-            (list year counter (- day-num prev-month))
+            (list year counter (exact (- day-num prev-month)))
             (kernel cur-month (car next-months) (cdr next-months) (+ counter 1))))))
 
+  (define (date->day-num date)
+    (let ((y (year date))
+          (m (month date))
+          (d (day date)))
+      (let ((m (if (< 2 m)
+                   m
+                   (+ m 12)))
+            (y (if (< 2 m)
+                   y
+                   (- y 1))))
+        (let ((i (if (leap-year? y)
+                     2
+                     3))
+              (year-diff (if (> m 12)
+                             (if (leap-year? y)
+                                 -366
+                                 -365)
+                             0)))
+          (+ d (* 30 (- m 1)) (floor (* 0.6 (+ m 1))) (- i) year-diff)))))
+        
   (define (fractional-day observing-time timezone)
     (/ (+ timezone
           (car observing-time)
@@ -148,7 +178,7 @@
                  (end (caddr x)))
              (list date
                    (degrees->hms (local-sidereal-time start longitude))
-                   (degrees->hms (local-sidereal-time start longitude)))))
+                   (degrees->hms (local-sidereal-time end longitude)))))
          window))
 
   (define (day-of-week date)
@@ -213,4 +243,98 @@
                         (month date)
                         0
                         tz
-                        (cons (list date tz) new-year))))))))
+                        (cons (list date tz) new-year)))))))
+
+  (define (transit-in-window? ra window)
+    (let ((window-start (cadr window))
+          (window-end (caddr window)))
+      (hms<= (hms- ra window-start)
+             (hms- window-end window-start))))
+ 
+
+  (define (list-dates ra year)
+    (let kernel ((year year)
+                 (date-list '()))
+      (if (not (null? year))
+          (if (transit-in-window? ra (car year))
+              (kernel (cdr year) (cons (caar year) date-list))
+              (kernel (cdr year) date-list))
+          (reverse date-list))))
+
+  (define (get-observing-dates catalog year)
+    (map (lambda (x)
+           (let ((name (catalog-name x))
+                 (ra (catalog-ra x))
+                 (dec (catalog-dec x)))
+             (list name
+                   ra
+                   dec
+                   (list-dates ra year))))
+         catalog))
+
+  (define (next-day date)
+    (let ((y (year date)))
+      (day-num->date y (+ (date->day-num date) 1))))
+
+  (define (date-list->date-range date-list)
+    (let kernel ((first-day (car date-list))
+                 (other-days (cdr date-list))
+                 (current-range (list (car date-list) (car date-list)))
+                 (date-range '()))
+      (if (not (null? other-days))
+          (let ((next (car other-days)))
+            (if (= (apply julian-date (next-day first-day))
+                   (apply julian-date next))
+                (kernel next (cdr other-days) (list (car current-range) next) date-range)
+                (kernel next (cdr other-days) (list next next) (cons current-range date-range))))
+          (reverse (cons current-range date-range)))))
+
+  (define (build-catalog-windows catalog)
+    (map (lambda (x)
+           (list (catalog-name x)
+                 (catalog-ra x)
+                 (catalog-dec x)
+                 (date-list->date-range (cadddr x))))
+         catalog))
+  
+  (define (observing-windows-to-string-list window-list)
+    (let kernel ((window-list window-list)
+                 (string-list '()))
+      (if (not (null? window-list))
+          (let ((start-date (caar window-list))
+                (end-date (cadar window-list)))
+            (let ((start-year (number->string (year start-date)))
+                  (start-month (number->string (month start-date)))
+                  (start-day (number->string (day start-date)))
+                  (end-year (number->string (year end-date)))
+                  (end-month (number->string (month end-date)))
+                  (end-day (number->string (day end-date))))
+              (kernel (cdr window-list)
+                      (cons (string-concatenate (list start-year "-" start-month "-" start-day
+                                                      " to " end-year "-" end-month "-" end-day))
+                            string-list))))
+          string-list)))
+
+  (define (string-list-builder string-list)
+    (let kernel ((string-list (cdr string-list))
+                 (new-list (list (car string-list))))
+      (if (not (null? string-list))
+          (kernel (cdr string-list) (cons (car string-list)
+                                          (cons ", " new-list)))
+          (string-concatenate new-list))))
+
+  (define (catalog-item-to-string catalog-item)
+    (let ((name (catalog-name catalog-item))
+          (ra (catalog-ra catalog-item))
+          (dec (catalog-dec catalog-item))
+          (window-strings (string-list-builder
+                           (observing-windows-to-string-list (cadddr catalog-item)))))
+      (let ((rah (number->string (car ra)))
+            (ram (number->string (cadr ra)))
+            (ras (number->string (caddr ra)))
+            (decd (number->string (car dec)))
+            (decm (number->string (cadr dec)))
+            (decs (number->string (caddr dec))))
+        (string-concatenate (list name " -- " rah "h " ram "m " ras "s -- "
+                                  decd "° " decm "' " decs (make-string 1 #\") " -- "
+                                  window-strings))))))
