@@ -22,12 +22,15 @@ such obstructions.
 
 ## Files
 `catalog.txt` -- the raw catalog data
+
 `difficulties.txt` -- objects that may pose special difficulties (low surface brightness or far enough
 to the south to be obstructed
 `observing-dates.txt` -- the catalog, arranged by observation window, with notes marking low surface
 brightness (B) or a southernly position (S). Modified from the output of `calculator.scm` for formatting
 and to include difficulty notes
+
 `calculator.scm` -- the script that actually runs the calculations to generate the observing windows
+
 `lib/astro` -- the astronomical calculation library
 
 ## References
