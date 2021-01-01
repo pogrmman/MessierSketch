@@ -7,7 +7,8 @@
   (export pi reduce-to-360
           degrees->radians radians->degrees
           degrees->hms hms->degrees hm->hms
-          hms+ hms- hms* hms/)
+          hms+ hms- hms* hms/
+          hms< hms= hms> hms<= hms>=)
 
   (begin
     ;; Pi
@@ -70,7 +71,7 @@
               ((= seconds 0)
                (* (+ hours (/ minutes 60)) 15))
               (else
-               (* (+ hours (/ minutes 60) (/ seconds 3600) 15))))))
+               (* (+ hours (/ minutes 60) (/ seconds 3600)) 15)))))
 
     ;; Hours:Minutes:Seconds Addition
     ;; Add two angles in hours:minutes:seconds format
@@ -108,6 +109,51 @@
     (define (hms/ angle angle2)
       (degrees->hms (reduce-to-360 (/ (hms->degrees angle) (hms->degrees angle2)))))
 
+    ;; Hours:Minutes:Seconds Less Than
+    ;; Compare two angles in hours:minutes:seconds format
+    ;; Usage: (hms< angle angle2) -> boolean
+    ;; angle -- an angle, in hours:minutes:seconds
+    ;; angle2 -- an angle, in hours:minutes:seconds
+    ;; boolean -- is angle < angle2?
+    (define (hms< angle angle2)
+      (< (hms->degrees angle) (hms->degrees angle2)))
+
+    ;; Hours:Minutes:Seconds Equals
+    ;; Compare two angles in hours:minutes:seconds format
+    ;; Usage: (hms= angle angle2) -> boolean
+    ;; angle -- an angle, in hours:minutes:seconds
+    ;; angle2 -- an angle, in hours:minutes:seconds
+    ;; boolean -- is angle = angle2?
+    (define (hms= angle angle2)
+      (= (hms->degrees angle) (hms->degrees angle2)))
+
+    ;; Hours:Minutes:Seconds Greater Than
+    ;; Compare two angles in hours:minutes:seconds format
+    ;; Usage: (hms> angle angle2) -> boolean
+    ;; angle -- an angle, in hours:minutes:seconds
+    ;; angle2 -- an angle, in hours:minutes:seconds
+    ;; boolean -- is angle > angle2?
+    (define (hms> angle angle2)
+      (> (hms->degrees angle) (hms->degrees angle2)))
+
+    ;; Hours:Minutes:Seconds Less Than/Equal To
+    ;; Compare two angles in hours:minutes:seconds format
+    ;; Usage: (hms<= angle angle2) -> boolean
+    ;; angle -- an angle, in hours:minutes:seconds
+    ;; angle2 -- an angle, in hours:minutes:seconds
+    ;; boolean -- is angle <= angle2?
+    (define (hms<= angle angle2)
+      (or (hms< angle angle2) (hms= angle angle2)))
+
+    ;; Hours:Minutes:Seconds Greater Than/Equal To
+    ;; Compare two angles in hours:minutes:seconds format
+    ;; Usage: (hms>= angle angle2) -> boolean
+    ;; angle -- an angle, in hours:minutes:seconds
+    ;; angle2 -- an angle, in hours:minutes:seconds
+    ;; boolean -- is angle >= angle2?
+    (define (hms>= angle angle2)
+      (or (hms> angle angle2) (hms= angle angle2)))
+
     ;; Hours:Minutes to Hours:Minutes:Seconds Conversion
     ;; Convert an angle in hours:minutes format to hours:minutes:seconds
     ;; Usage: (hm->hms angle) -> converted-angle
@@ -119,6 +165,11 @@
              (seconds (* 60 (- (cadr angle) minutes))))
         (list hours minutes (round-to-decimal-places seconds 2))))
 
+    ;; Round a Number to a Given Number of Decimals
+    ;; Usage: (round-to-decimal-places number decimal-places) -> rounded
+    ;; number -- a number to round
+    ;; decimal-places -- how many decimal places to round to
+    ;; rounded -- the rounded number
     (define (round-to-decimal-places number decimal-places)
       (let ((power (expt 10 decimal-places)))
         (/ (round (* number power)) power)))))
