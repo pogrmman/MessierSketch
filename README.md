@@ -20,8 +20,19 @@ surface brightness. Additionally, although I'm located fairly far to the south, 
 many tall trees that block the sky, so I'm going to have to sketch some objects from a location without
 such obstructions.
 
+## Files
+`catalog.txt` -- the raw catalog data
+`difficulties.txt` -- objects that may pose special difficulties (low surface brightness or far enough
+to the south to be obstructed
+`observing-dates.txt` -- the catalog, arranged by observation window, with notes marking low surface
+brightness (B) or a southernly position (S). Modified from the output of `calculator.scm` for formatting
+and to include difficulty notes
+`calculator.scm` -- the script that actually runs the calculations to generate the observing windows
+`lib/astro` -- the astronomical calculation library
+
 ## References
-[Solar Position Algorithm for Solar Radiation Applications](https://www.nrel.gov/docs/fy08osti/34302.pdf) -- I took many of my astronomical calculations from here. Some are currently unused, but I plan to
+[Solar Position Algorithm for Solar Radiation Applications](https://www.nrel.gov/docs/fy08osti/34302.pdf)
+-- I took many of my astronomical calculations from here. Some are currently unused, but I plan to
 create a full-fledge astronomical calculation library using many of them.
 [Messier Guide by Tony Flanders](https://tonyflanders.wordpress.com/messier-guide-index-by-number/) --
 I used this to identify objects of low surface brightness that may be a challenge
