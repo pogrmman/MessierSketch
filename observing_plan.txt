@@ -5,7 +5,7 @@ Observing Plan
 15 April 1st to April 14th -- M40, M49, M61, M84, M85, M86, M87, M88, M89, M98(B), M99, M100(B), M106, M109(B), M109b(B) 
 15 April 30th to May 13th -- M3, M51, M53, M58, M59, M60, M63, M64, M68(S), M83(S), M90, M91, M94, M101(B), M104
 12 May 30th to June 11th -- M4(S), M5, M9, M10, M12, M13, M19, M62(S), M80(S), M92, M102, M107
-14 June 29th to July 11th -- M6(S), M7(S), M8(S), M14, M16, M17, M18, M20(B,S), M21(S), M23, M24, M25, M28(S), M69 (S)
+14 June 29th to July 11th -- M6(S), M7(S), M8(S), M14, M16, M17, M18, M20(B,S), M21(S), M23, M24, M25, M28(S), M69(S)
 12 July 30th to August 11th -- M11, M22(S), M26, M27, M29, M54(S), M55(S), M56, M57, M70(S), M71, M75(S)
 6  August 30th to September 10th -- M2, M15, M30(S), M39, M72, M73
 4  September 29th to October 10th -- M31, M32, M52, M110
