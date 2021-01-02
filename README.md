@@ -28,9 +28,29 @@ such obstructions.
 to the south to be obstructed
 
 
-`observing-dates.txt` -- the catalog, arranged by observation window, with notes marking low surface
+`observing_dates.txt` -- the catalog, arranged by observation window, with notes marking low surface
 brightness (B) or a southernly position (S). Modified from the output of `calculator.scm` for formatting
 and to include difficulty notes
+
+
+`moon_position.txt` -- Moon position at 10:30 local time every day of 2021, calculated using 
+[Cartes du Ciel](https://www.ap-i.net/skychart/en/start)
+
+
+`moon_below_horizon.txt` -- dates on which the Moon lies more than 10 degrees below the horizon, making
+conditions good for observing deep sky objects
+
+
+`observing_dates_moon.txt` -- similar to `observing_dates.txt`, only with additional windows that are the
+overlap of the best visibility window with the windows of when the Moon is more than 10 degrees below the
+horizon at 10:30 pm
+
+
+`moon_observation_windows.txt` -- a list of which objects transit the meridian sometime during each period
+where the Moon is more than 10 degrees below the horizzon at 10:30 pm 
+
+
+`observing_plan.txt` -- my first pass at an observing plan
 
 
 `calculator.scm` -- the script that actually runs the calculations to generate the observing windows
